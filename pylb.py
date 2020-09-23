@@ -14,6 +14,7 @@ class Domain:
 
         shape.append(self.d)
         self.f = numpy.empty(shape, dtype=numpy.float64)
+        self.fs = self.f.reshape(-1, self.d)
 
     def _state(self, f):
         density = sum(f)
@@ -29,8 +30,7 @@ class Domain:
             self.f[..., i] = numpy.roll(self.f[..., i], ei, range(self.dim))
 
     def _collide(self):
-        fs = self.f.reshape(-1, self.d)
-        for f in fs:
+        for f in self.fs:
             rho, u = self._state(f)
             feq = self._equilibrium(rho, u)
             f -= self.omega * (f - feq)
@@ -54,8 +54,7 @@ class Domain:
         shape[-1] = self.dim + 1
         state = numpy.empty(shape, dtype=numpy.float64)
         ss = state.reshape(-1, self.dim+1)
-        fs = self.f.reshape(-1, self.d)
-        for i, f in enumerate(fs):
+        for i, f in enumerate(self.fs):
             rho, u = self._state(f)
             ss[i, 0] = rho
             ss[i, 1:] = u
