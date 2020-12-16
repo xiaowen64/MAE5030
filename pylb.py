@@ -4,12 +4,13 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 class Domain:
-    def __init__(self, shape, e, w, tau):
+    def __init__(self, shape, e, w, c, tau):
 
         self.dim = len(shape)
         self.d = len(e)
         self.e = e
         self.w = w
+        self.c = c
         self.omega = 1. / tau
 
         shape.append(self.d)
@@ -18,12 +19,12 @@ class Domain:
 
     def _state(self, f):
         density = sum(f)
-        velocity = (f @ self.e) / density
+        velocity = (f @ self.e) * self.c / density
         return density, velocity
 
     def _equilibrium(self, rho, u):
-        ux = self.e @ u
-        return rho * self.w * (1 + 3. * ux + 4.5 * ux * ux - 1.5 * numpy.dot(u, u))
+        ux = self.c * self.e @ u
+        return rho * self.w * (1 + ux + .5 * (ux * ux - numpy.dot(u, u)))
 
     def _stream(self):
         for i, ei in enumerate(self.e):
@@ -75,6 +76,8 @@ d2q9_e = numpy.array([
 
 d2q9_w = numpy.concatenate(([4./9.], 4 * [1./9.], 4 * [1./36]))
 
+d2q9_c = math.sqrt(3.)
+
 def shear_layer(x, y):
     vx = u0 * math.tanh((abs(y - 0.5) - 0.25) / thickness)
     vy = delta * u0 * math.sin(2. * math.pi * (x - .25))
@@ -86,9 +89,9 @@ L         = [100, 100]
 thickness = 0.0125
 delta     = 0.05
 
-u0 = Mach / math.sqrt(3.)
-nu = u0 * L[1] / Reynolds
-tau = 3. * nu + .5
+u0 = Mach 
+nu = u0 * L[1] * d2q9_c / Reynolds
+tau = nu + .5
 #
 # setup wave numbers for Fourier transform
 #
@@ -102,7 +105,7 @@ kx = numpy.roll(kx, LH + 1)
 #
 # setup computational domain
 #
-domain = Domain(L, d2q9_e, d2q9_w, tau)
+domain = Domain(L, d2q9_e, d2q9_w, d2q9_c, tau)
 domain.initialize(shear_layer)
 for i in range(200):
     print(i)
